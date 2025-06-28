@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:5050';
+const BASE_URL = 'https://focusbuddy-backendrender.onrender.com';
 
 const form = document.getElementById('sessionForm');
 const titleInput = document.getElementById('title');
