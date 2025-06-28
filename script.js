@@ -45,14 +45,29 @@ form.onsubmit = async (e) => {
       form.reset();
       editId.value = '';
       loadSessions();
-
-      const utterance = new SpeechSynthesisUtterance("Session added successfully. You will receive a reminder email by 8 A.M. in the morning.");
+// ✅ ✅ ✅ Correct speech snippet goes HERE only:
+      const utterance = new SpeechSynthesisUtterance(
+        "Session added successfully. You will receive a reminder email by 8 A.M. in the morning."
+      );
       utterance.lang = 'en-US';
+
       const voices = speechSynthesis.getVoices();
-      utterance.voice = voices.find(v =>
-        v.lang === 'en-US' && (v.name.includes("Female") || v.name.includes("Google"))
-      ) || voices[0];
-      speechSynthesis.speak(utterance);
+
+      if (!voices.length) {
+        speechSynthesis.onvoiceschanged = () => {
+          const voices = speechSynthesis.getVoices();
+          utterance.voice = voices.find(v =>
+            v.lang === 'en-US' && (v.name.includes("Female") || v.name.includes("Google"))
+          ) || voices[0];
+          speechSynthesis.speak(utterance);
+        };
+      } else {
+        utterance.voice = voices.find(v =>
+          v.lang === 'en-US' && (v.name.includes("Female") || v.name.includes("Google"))
+        ) || voices[0];
+        speechSynthesis.speak(utterance);
+      }
+
     } else {
       showMessage('❌ Error saving session.', 'danger');
     }
@@ -61,7 +76,6 @@ form.onsubmit = async (e) => {
     showMessage('❌ Server error.', 'danger');
   }
 };
-
 async function loadSessions() {
   try {
     const res = await fetch(`${BASE_URL}/sessions`);
