@@ -4,38 +4,95 @@
   <meta charset="UTF-8" />
   <title>🎯 FocusBuddy</title>
   <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/lux/bootstrap.min.css" rel="stylesheet">
-  <style>
-    .fade {
-      opacity: 0;
-      transition: opacity 0.5s ease-in-out;
-    }
-    .fade.show {
-      opacity: 1;
-    }
-    footer {
-      background-color: #f8f9fa;
-      padding: 20px 0;
-      text-align: center;
-      margin-top: 40px;
-    }
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style >.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 28px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+  top: 0; left: 0; right: 0; bottom: 0;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+.switch input:checked + .slider {
+  background-color: #2196F3;
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+    .fade { opacity: 0; transition: opacity 0.5s ease-in-out; }
+    .fade.show { opacity: 1; }
+    footer { background-color: #f8f9fa; padding: 20px 0; text-align: center; margin-top: 40px; }
+    .highlight { background-color: #fff9db; }
+    .dark-mode { background-color: #222 !important; color: #f1f1f1 !important; }
+    .dark-mode .card { background-color: #333 !important; }
+    .dark-mode footer { background-color: #111 !important; }
+    body {
+  background-color: #e6f0fa !important;
+}
+
+
   </style>
+  <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
 </head>
-<body class="bg-light d-flex flex-column min-vh-100">
-  <!-- ✅ HEADER -->
+<body class="d-flex flex-column min-vh-100" id="body">
+
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
       <a class="navbar-brand d-flex align-items-center" href="#">
-        <img src="https://i.imgur.com/rJ1NkxU.jpeg" alt="FocusBuddy Duck" width="40" height="40" class="me-2 rounded-circle">
+        <img src="duck.png" alt="FocusBuddy Duck" width="40" height="40" class="me-2 rounded-circle">
         <strong>FocusBuddy</strong>
       </a>
+      <label class="switch ms-auto">
+  <input type="checkbox" id="modeToggle">
+  <span class="slider"></span>
+</label>
+
     </div>
   </nav>
 
-  <!-- ✅ MAIN CONTENT -->
-  <main class="container py-5 flex-grow-1">
-    <div class="card p-4 mb-4 shadow-sm">
+  <div class="text-center mt-4">
+    <dotlottie-player 
+      src="https://lottie.host/076920c7-2b6c-40ca-9861-b122b711f654/WDvmxlImpd.lottie" 
+      background="transparent" 
+      speed="1" 
+      style="width: 120px; height: 120px" 
+      loop autoplay>
+    </dotlottie-player>
+  </div>
+
+  <main class="container py-4 flex-grow-1">
+    <div class="card p-4 mb-4 shadow-sm highlight">
       <h3 class="card-title mb-3">Add a New Session</h3>
       <form id="sessionForm">
+        <input type="hidden" id="editId" value="">
         <div class="mb-3">
           <input type="text" id="title" class="form-control" placeholder="Session Title" required>
         </div>
@@ -45,22 +102,31 @@
         <div class="mb-3">
           <input type="email" id="email" class="form-control" placeholder="Your Email" required>
         </div>
+        <div class="mb-3">
+          <select id="category" class="form-control">
+            <option value="Work">Work</option>
+            <option value="Study">Study</option>
+            <option value="Fitness">Fitness</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <input type="text" id="date" class="form-control" placeholder="Select a date" required>
+        </div>
         <button class="btn btn-success" type="submit">Add Session</button>
+        <button class="btn btn-secondary ms-2" type="button" onclick="exportToCSV()">⬇</button>
       </form>
-
-      <!-- ✅ Message div for alerts -->
       <div id="message" class="my-3"></div>
     </div>
 
-    <!-- ✅ Sessions list -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <input type="text" id="searchInput" class="form-control mb-3" placeholder="Search sessions...">
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
       <h3>Your Sessions</h3>
       <span class="badge bg-info" id="sessionCount">0</span>
     </div>
     <ul id="sessionsList" class="list-group"></ul>
   </main>
 
-  <!-- ✅ FOOTER -->
   <footer>
     <div class="container">
       <p class="mb-1">🐥 FocusBuddy — Your daily productivity buddy!</p>
@@ -68,111 +134,32 @@
     </div>
   </footer>
 
-  <!-- ✅ SCRIPT -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script>
-    const form = document.getElementById('sessionForm');
-    const titleInput = document.getElementById('title');
-    const descriptionInput = document.getElementById('description');
-    const emailInput = document.getElementById('email');
-    const sessionsList = document.getElementById('sessionsList');
-    const messageDiv = document.getElementById('message');
-    const sessionCount = document.getElementById('sessionCount');
+    flatpickr("#date", {
+      altInput: true,
+      altFormat: "F j, Y",
+      dateFormat: "Y-m-d"
+    });
+    const modeToggle = document.getElementById('modeToggle');
+modeToggle.addEventListener('change', () => {
+  document.getElementById('body').classList.toggle('dark-mode', modeToggle.checked);
+});
 
-    window.onload = loadSessions;
 
-    form.onsubmit = async (e) => {
-      e.preventDefault();
-      const session = {
-        title: titleInput.value.trim(),
-        description: descriptionInput.value.trim(),
-        email: emailInput.value.trim()
-      };
-
-      if (!session.title || !session.email) {
-        showMessage('Please enter a title and your email.', 'danger');
-        return;
-      }
-
-      try {
-        const res = await fetch('https://focusbuddy-backend-production.up.railway.app/sessions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(session),
-        });
-        if (res.ok) {
-          showMessage('✅ Session added!', 'success');
-          form.reset();
-          titleInput.focus();
-          loadSessions();
-        } else {
-          showMessage('❌ Error adding session.', 'danger');
-        }
-      } catch (err) {
-        console.error(err);
-        showMessage('❌ Server error.', 'danger');
-      }
-    };
-
-    async function loadSessions() {
-      sessionsList.innerHTML = `
-        <li class="list-group-item text-center">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-        </li>`;
-      try {
-        const res = await fetch('https://focusbuddy-backend-production.up.railway.app/sessions');
-        const sessions = await res.json();
-        sessionsList.innerHTML = '';
-        sessionCount.textContent = sessions.length;
-
-        sessions.forEach(s => {
-          const li = document.createElement('li');
-          li.className = 'list-group-item d-flex justify-content-between align-items-center fade';
-          li.innerHTML = `
-            <span><strong>${s.title}</strong>: ${s.description}
-              <small class="text-muted">(${s.email})</small></span>
-            <button class="btn btn-sm btn-danger" onclick="deleteSession(${s.id})">❌</button>
-          `;
-          sessionsList.appendChild(li);
-          setTimeout(() => li.classList.add('show'), 10);
-        });
-
-        if (sessions.length === 0) {
-          sessionsList.innerHTML = '<li class="list-group-item">No sessions yet. Add one!</li>';
-        }
-      } catch (err) {
-        console.error(err);
-        sessionsList.innerHTML = '<li class="list-group-item text-danger">Error loading sessions.</li>';
-      }
-    }
-
-    async function deleteSession(id) {
-      if (!confirm('Are you sure you want to delete this session?')) return;
-      try {
-        const res = await fetch(`https://focusbuddy-backend-production.up.railway.app/sessions/${id}`, {
-          method: 'DELETE',
-        });
-        if (res.ok) {
-          showMessage('🗑️ Session deleted.', 'success');
-          loadSessions();
-        } else {
-          showMessage('❌ Failed to delete.', 'danger');
-        }
-      } catch (err) {
-        console.error(err);
-        showMessage('❌ Server error.', 'danger');
-      }
-    }
-
-    function showMessage(msg, type) {
-      messageDiv.innerHTML = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-          ${msg}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>`;
+    function exportToCSV() {
+      const items = JSON.parse(localStorage.getItem("focusSessions")) || [];
+      if (items.length === 0) return alert("No data to export");
+      const header = Object.keys(items[0]).join(",");
+      const rows = items.map(obj => Object.values(obj).join(","));
+      const csvContent = [header, ...rows].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "sessions.csv";
+      link.click();
     }
   </script>
+  <script src="script.js"></script>
 </body>
 </html>
-
