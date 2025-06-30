@@ -43,3 +43,6 @@
 ## 📂 License
 
 MIT — open source 🚀
+## 🎥 Project Demo
+
+[▶️ Click here to watch the demo video](FocusBuddyDemo.mp4)
